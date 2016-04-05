@@ -12,14 +12,15 @@ require 'fileutils'
 
 with_driver 'aws'
 
-num_webservers = 1
+fqdn = "ip-172-31-16-47.eu-central-1.compute.internal"
+num_webservers = 2
 
 with_machine_options({
   convergence_options: {
 	    ssl_verify_mode: :verify_peer,
 	    allow_overwrite_keys: true,
 	    client_rb_path: "/etc/chef/client.rb",
-	    chef_server: "https://ip-172-31-19-13.eu-central-1.compute.internal/organizations/4thcoffe",
+	    chef_server: "https://#{fqdn}/organizations/4thcoffe",
   },
   bootstrap_options: {
   	key_name: "hpe-cluster1",
@@ -28,27 +29,30 @@ with_machine_options({
 })
 
 1.upto(num_webservers) do |i|
-	file_name = "/home/ec2-user/testmachine-#{i}.rb"
-	FileUtils.cp 'home/ec2-user/client.rb', file_name
+	file_name = "/tmp/testmachine-#{i}.rb"
+	FileUtils.cp '/etc/chef/jenkins_run/client.rb', file_name
 	text = File.read(file_name)
  	new_contents = text.gsub(/newmachine/, "testmachine-#{i}")
 	File.open(file_name, "w") {|file| file.puts new_contents}
+
+file "/tmp/testmachine-#{i}.rb" do
+  mode '0666'
 end
+end
+
 
 machine_batch do
 	1.upto(num_webservers) do |i|
 
 		machine "testmachine-#{i}" do
 		  action :converge
-		  recipe 'htop'
-		  recipe 'nginx'
-		  recipe 'jboss7'
+		  role 'demo-role'
 		  driver 'aws'
-		  files '/etc/chef/client.rb' => "/home/ec2-user/testmachine-#{i}.rb",
-			'/etc/chef/trusted_certs/ip-172-31-19-13.eu-central-1.compute.internal.crt' => '/etc/chef/trusted_certs/ip-172-31-19-13.eu-central-1.compute.internal.crt'
+		  files '/etc/chef/client.rb' => "/tmp/testmachine-#{i}.rb",
+			"/etc/chef/trusted_certs/#{fqdn}.crt" => "/etc/chef/trusted_certs/#{fqdn}.crt"
 		  chef_environment 'hpe-demo-for-client'
-		  chef_server :chef_server_url=>"https://ip-172-31-19-13.eu-central-1.compute.internal/organizations/4thcoffe",
-			:options=>{:signing_key_filename=>"/home/ec2-user/.chef/zabkiewi.pem",
+		  chef_server :chef_server_url=>"https://#{fqdn}/organizations/4thcoffe",
+			:options=>{:signing_key_filename=>"/tmp/zabkiewi.pem",
 			:client_name=>"zabkiewi"}
 		  from_image 'ami-cd362ca1'
 		  tag 'test-provisioning'

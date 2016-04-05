@@ -1,6 +1,6 @@
 name             'hpe-cookbook'
-maintainer       'YOUR_COMPANY_NAME'
-maintainer_email 'YOUR_EMAIL'
+maintainer       'HPE'
+maintainer_email 'patryk.zabkiewicz@hpe.com'
 license          'All rights reserved'
 description      'Installs/Configures hpe-cookbook'
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
